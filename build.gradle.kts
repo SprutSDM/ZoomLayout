@@ -1,32 +1,30 @@
-buildscript {
-
-    extra["minSdkVersion"] = 16
-    extra["compileSdkVersion"] = 29
-    extra["targetSdkVersion"] = 29
-    extra["kotlinVersion"] = "1.3.72"
-
-    repositories {
-        mavenCentral()
-        google()
-        jcenter()
-    }
-
-    dependencies {
-        val kotlinVersion = property("kotlinVersion") as String
-        classpath("com.android.tools.build:gradle:4.0.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("com.otaliastudios.tools:publisher:0.1.5")
-    }
+plugins {
+    id("com.android.library")
+    id("kotlin-android")
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-        jcenter()
+android {
+    setCompileSdkVersion(property("compileSdkVersion") as Int)
+
+    defaultConfig {
+        setMinSdkVersion(property("minSdkVersion") as Int)
+        setTargetSdkVersion(property("targetSdkVersion") as Int)
+        versionName = "1.8.0"
+        versionNameSuffix = ""
+    }
+
+    buildTypes {
+        get("release").consumerProguardFile("proguard-rules.pro")
     }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(buildDir)
+dependencies {
+    val kotlinVersion = property("kotlinVersion") as String
+    api("androidx.annotation:annotation:1.1.0")
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion")
+    api("com.otaliastudios.opengl:egloo:0.4.0")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.3.1")
 }
+
