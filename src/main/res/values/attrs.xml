@@ -54,6 +54,9 @@
             <flag name="none" value="0x44" />
         </attr>
         <attr name="animationDuration" format="integer" />
+        <attr name="background" format="reference" />
+        <attr name="mapWidth" format="integer" />
+        <attr name="mapHeight" format="integer" />
     </declare-styleable>
 
 </resources>
