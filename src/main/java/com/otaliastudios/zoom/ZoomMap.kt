@@ -173,19 +173,15 @@ class ZoomMap @JvmOverloads constructor(
             }
         }
         visibleCache.forEach {
-            if (zoomDepthRate >= it.getVisibilityRate()) {
-                val newTranslationX = scaledPanX - it.getXPivot() +
-                        it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
-                val newTranslationY = scaledPanY - it.getYPivot() +
-                        it.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
-                it.view.apply {
-                    translationX = newTranslationX
-                    translationY = newTranslationY
-                    visibility = View.VISIBLE
-                }
-            } else {
-                it.view.visibility = View.INVISIBLE
+            val newTranslationX = scaledPanX - it.getXPivot() +
+                    it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
+            val newTranslationY = scaledPanY - it.getYPivot() +
+                    it.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
+            it.view.apply {
+                translationX = newTranslationX
+                translationY = newTranslationY
             }
+            it.onVisibilityRateChanged(zoomDepthRate)
         }
         if ((isHorizontalScrollBarEnabled || isVerticalScrollBarEnabled) && !awakenScrollBars()) {
             invalidate()
