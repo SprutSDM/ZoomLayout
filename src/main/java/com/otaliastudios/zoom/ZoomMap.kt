@@ -32,6 +32,8 @@ class ZoomMap @JvmOverloads constructor(
 
     private var visibleCache: List<ZoomMapViewHolder> = emptyList()
 
+    private var wasUpdatedAtFirstGlobalLayout: Boolean = false
+
     init {
         val a = context.theme.obtainStyledAttributes(attrs, R.styleable.ZoomEngine, defStyleAttr, 0)
         val overScrollHorizontal = a.getBoolean(R.styleable.ZoomEngine_overScrollHorizontal, true)
@@ -92,8 +94,9 @@ class ZoomMap @JvmOverloads constructor(
 
     override fun onGlobalLayout() {
         backgroundImage?.let {
-            engine.setContentSize(it.width.toFloat(), it.height.toFloat())
-            if (it.isLaidOut) {
+            engine.setContentSize(it.measuredWidth.toFloat(), it.measuredHeight.toFloat())
+            if (it.isLaidOut && !wasUpdatedAtFirstGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
+                wasUpdatedAtFirstGlobalLayout = true
                 onUpdate()
             }
         }
