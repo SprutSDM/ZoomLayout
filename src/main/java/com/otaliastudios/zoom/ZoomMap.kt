@@ -34,6 +34,8 @@ class ZoomMap @JvmOverloads constructor(
 
     private var wasUpdatedAtFirstGlobalLayout: Boolean = false
 
+    private var onOutsideClickListener: OnClickListener? = null
+
     init {
         val a = context.theme.obtainStyledAttributes(attrs, R.styleable.ZoomEngine, defStyleAttr, 0)
         val overScrollHorizontal = a.getBoolean(R.styleable.ZoomEngine_overScrollHorizontal, true)
@@ -128,10 +130,16 @@ class ZoomMap @JvmOverloads constructor(
         measureChildren(spec, spec)
     }
 
+    fun setOnOutsideClickListener(clickListener: OnClickListener) {
+        onOutsideClickListener = clickListener
+        backgroundImage?.setOnClickListener(clickListener)
+    }
+
     private fun setBackground(@DrawableRes resId: Int) {
         if (backgroundImage == null) {
             backgroundImage = ImageView(context).apply {
                 layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                setOnClickListener(onOutsideClickListener)
             }
             addView(backgroundImage)
         }
