@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Matrix
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
@@ -184,9 +183,9 @@ class ZoomMap @JvmOverloads constructor(
             }
         }
         visibleCache.forEach {
-            val newTranslationX = scaledPanX - it.getXPivot() +
+            val newTranslationX = scaledPanX - it.getPivotX() +
                     it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
-            val newTranslationY = scaledPanY - it.getYPivot() +
+            val newTranslationY = scaledPanY - it.getPivotY() +
                     it.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
             it.view.apply {
                 translationX = newTranslationX
