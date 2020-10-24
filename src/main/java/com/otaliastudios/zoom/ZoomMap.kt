@@ -23,6 +23,10 @@ class ZoomMap @JvmOverloads constructor(
     ZoomApi by engine {
 
     var adapter: ZoomMapAdapter<ZoomMapViewHolder>? = null
+        set(value) {
+            field = value
+            onAdapterDataSetChanged()
+        }
     private var backgroundImage: ImageView? = null
     var mapWidth: Int = 0
         private set
@@ -154,6 +158,21 @@ class ZoomMap @JvmOverloads constructor(
         return engine.onTouchEvent(ev) || super.onTouchEvent(ev)
     }
 
+    fun onAdapterDataSetChanged() {
+        adapter?.let { adapter ->
+        removeAllViews()
+            addView(backgroundImage)
+            val newVisibleCache = mutableListOf<ZoomMapViewHolder>()
+            for (i in 0 until adapter.getChildCount()) {
+                val viewHolder = adapter.createViewHolder(this)
+                adapter.bindViewHolder(viewHolder, i)
+                newVisibleCache.add(viewHolder)
+                addView(viewHolder.view)
+            }
+            visibleCache = newVisibleCache
+        }
+    }
+
     private fun onUpdate() {
         // Update background
         backgroundImage?.let {
@@ -168,20 +187,6 @@ class ZoomMap @JvmOverloads constructor(
         val zoomDepthWidth = (MAX_DEPTH_RATE_AT_ZOOM - MIN_DEPTH_RATE_AT_ZOOM)
         val zoomDepthRate = zoomWidthPercent * zoomDepthWidth + MIN_DEPTH_RATE_AT_ZOOM
 
-        adapter?.let { adapter ->
-            if (adapter.getChildCount() != childCount - 1) {
-                removeAllViews()
-                addView(backgroundImage)
-                val newVisibleCache = mutableListOf<ZoomMapViewHolder>()
-                for (i in 0 until adapter.getChildCount()) {
-                    val viewHolder = adapter.createViewHolder(this)
-                    adapter.bindViewHolder(viewHolder, i)
-                    newVisibleCache.add(viewHolder)
-                    addView(viewHolder.view)
-                }
-                visibleCache = newVisibleCache
-            }
-        }
         visibleCache.forEach {
             val newTranslationX = scaledPanX - it.getPivotX() +
                     it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
