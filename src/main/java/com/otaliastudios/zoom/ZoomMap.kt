@@ -25,6 +25,7 @@ class ZoomMap @JvmOverloads constructor(
     var adapter: ZoomMapAdapter<ZoomMapViewHolder>? = null
         set(value) {
             field = value
+            value?.bind(this)
             onAdapterDataSetChanged()
         }
     private var backgroundImage: ImageView? = null
