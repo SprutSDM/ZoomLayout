@@ -33,7 +33,8 @@ class ZoomMap @JvmOverloads constructor(
     var mapHeight: Int = 0
         private set
 
-    private var visibleCache: List<ZoomMapViewHolder> = emptyList()
+    private var visibleViews: List<ZoomMapViewHolder> = emptyList()
+    private val viewsCache = hashSetOf<ZoomMapViewHolder>()
 
     private var wasUpdatedAtFirstGlobalLayout: Boolean = false
 
@@ -160,16 +161,23 @@ class ZoomMap @JvmOverloads constructor(
 
     fun onAdapterDataSetChanged() {
         adapter?.let { adapter ->
-        removeAllViews()
+            removeAllViews()
             addView(backgroundImage)
-            val newVisibleCache = mutableListOf<ZoomMapViewHolder>()
+            viewsCache.addAll(visibleViews)
+            val newVisibleViews = mutableListOf<ZoomMapViewHolder>()
             for (i in 0 until adapter.getChildCount()) {
-                val viewHolder = adapter.createViewHolder(this)
+                val viewHolder = if (viewsCache.isNotEmpty()) {
+                    viewsCache.first().also {
+                        viewsCache.remove(it)
+                    }
+                } else {
+                    adapter.createViewHolder(this)
+                }
                 adapter.bindViewHolder(viewHolder, i)
-                newVisibleCache.add(viewHolder)
+                newVisibleViews.add(viewHolder)
                 addView(viewHolder.view)
             }
-            visibleCache = newVisibleCache
+            visibleViews = newVisibleViews
         }
     }
 
@@ -187,7 +195,7 @@ class ZoomMap @JvmOverloads constructor(
         val zoomDepthWidth = (MAX_DEPTH_RATE_AT_ZOOM - MIN_DEPTH_RATE_AT_ZOOM)
         val zoomDepthRate = zoomWidthPercent * zoomDepthWidth + MIN_DEPTH_RATE_AT_ZOOM
 
-        visibleCache.forEach {
+        visibleViews.forEach {
             val newTranslationX = scaledPanX - it.getPivotX() +
                     it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
             val newTranslationY = scaledPanY - it.getPivotY() +
