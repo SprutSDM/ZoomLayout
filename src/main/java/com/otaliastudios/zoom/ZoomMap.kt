@@ -33,8 +33,8 @@ class ZoomMap @JvmOverloads constructor(
     var mapHeight: Int = 0
         private set
 
-    private var visibleViews: List<ZoomMapViewHolder> = emptyList()
-    private val viewsCache = hashSetOf<ZoomMapViewHolder>()
+    private var visibleViews: List<TypedViewHolder> = emptyList()
+    private val viewsCache: HashMap<Int, HashSet<ZoomMapViewHolder>> = hashMapOf()
 
     private var wasUpdatedAtFirstGlobalLayout: Boolean = false
 
@@ -163,18 +163,22 @@ class ZoomMap @JvmOverloads constructor(
         adapter?.let { adapter ->
             removeAllViews()
             addView(backgroundImage)
-            viewsCache.addAll(visibleViews)
-            val newVisibleViews = mutableListOf<ZoomMapViewHolder>()
-            for (i in 0 until adapter.getChildCount()) {
-                val viewHolder = if (viewsCache.isNotEmpty()) {
-                    viewsCache.first().also {
-                        viewsCache.remove(it)
-                    }
-                } else {
-                    adapter.createViewHolder(this)
+            visibleViews.forEach {
+                if (it.type !in viewsCache) {
+                    viewsCache[it.type] = hashSetOf()
                 }
-                adapter.bindViewHolder(viewHolder, i)
-                newVisibleViews.add(viewHolder)
+                viewsCache[it.type]?.add(it.viewHolder)
+            }
+            val newVisibleViews = mutableListOf<TypedViewHolder>()
+            for (i in 0 until adapter.getChildCount()) {
+                val vhType = adapter.getTypeFor(i)
+                val viewHolder = viewsCache[vhType]?.let { typedViewsCache ->
+                    typedViewsCache.firstOrNull()?.also {
+                        typedViewsCache.remove(it)
+                    } ?: adapter.createViewHolder(this, vhType)
+                } ?: adapter.createViewHolder(this, vhType)
+                adapter.bindViewHolder(viewHolder, i, vhType)
+                newVisibleViews.add(TypedViewHolder(viewHolder, vhType))
                 addView(viewHolder.view)
             }
             visibleViews = newVisibleViews
@@ -196,15 +200,16 @@ class ZoomMap @JvmOverloads constructor(
         val zoomDepthRate = zoomWidthPercent * zoomDepthWidth + MIN_DEPTH_RATE_AT_ZOOM
 
         visibleViews.forEach {
-            val newTranslationX = scaledPanX - it.getPivotX() +
-                    it.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
-            val newTranslationY = scaledPanY - it.getPivotY() +
-                    it.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
-            it.view.apply {
+            val vh = it.viewHolder
+            val newTranslationX = scaledPanX - vh.getPivotX() +
+                    vh.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
+            val newTranslationY = scaledPanY - vh.getPivotY() +
+                    vh.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
+            vh.view.apply {
                 translationX = newTranslationX
                 translationY = newTranslationY
             }
-            it.onVisibilityRateChanged(zoomDepthRate)
+            vh.onVisibilityRateChanged(zoomDepthRate)
         }
         if ((isHorizontalScrollBarEnabled || isVerticalScrollBarEnabled) && !awakenScrollBars()) {
             invalidate()
@@ -218,6 +223,8 @@ class ZoomMap @JvmOverloads constructor(
     override fun computeVerticalScrollOffset(): Int = engine.computeVerticalScrollOffset()
 
     override fun computeVerticalScrollRange(): Int = engine.computeVerticalScrollRange()
+
+    private class TypedViewHolder(val viewHolder: ZoomMapViewHolder, val type: Int)
 
     companion object {
         private val TAG = ZoomMap::class.java.simpleName

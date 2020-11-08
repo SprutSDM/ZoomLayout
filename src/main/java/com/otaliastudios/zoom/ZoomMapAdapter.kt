@@ -10,8 +10,10 @@ abstract class ZoomMapAdapter<VH : ZoomMapViewHolder> {
     }
 
     abstract fun getChildCount(): Int
-    abstract fun createViewHolder(parent: ViewGroup): VH
-    abstract fun bindViewHolder(viewHolder: VH, position: Int)
+    abstract fun createViewHolder(parent: ViewGroup, type: Int): VH
+    abstract fun bindViewHolder(viewHolder: VH, position: Int, type: Int)
+
+    open fun getTypeFor(position: Int): Int = 0
 
     protected fun notifyDataSetChanged() {
         zoomMap?.onAdapterDataSetChanged()
