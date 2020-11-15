@@ -34,6 +34,11 @@ class ZoomMap @JvmOverloads constructor(
     var mapHeight: Int = 0
         private set
 
+    var virtualWidth: Int = 0
+        private set
+    var virtualHeight: Int = 0
+        private set
+
     private var visibleViews: List<TypedViewHolder> = emptyList()
     private val viewsCache: HashMap<Int, HashSet<ZoomMapViewHolder>> = hashMapOf()
 
@@ -66,6 +71,8 @@ class ZoomMap @JvmOverloads constructor(
         val backgroundResId = a.getResourceId(R.styleable.ZoomEngine_background, 0)
         mapWidth = a.getInt(R.styleable.ZoomEngine_mapWidth, 0)
         mapHeight = a.getInt(R.styleable.ZoomEngine_mapHeight, 0)
+        virtualWidth = a.getInt(R.styleable.ZoomEngine_virtualMapWidth, 10_000)
+        virtualHeight = a.getInt(R.styleable.ZoomEngine_virtualMapHeight, 10_000)
         a.recycle()
 
         engine.setContainer(this)
@@ -202,10 +209,12 @@ class ZoomMap @JvmOverloads constructor(
 
         visibleViews.forEach {
             val vh = it.viewHolder
+            val realXPosition = vh.getPositionX() - (virtualWidth - mapWidth) / 2f
+            val realYPosition = vh.getPositionY() - (virtualHeight - mapHeight) / 2f
             val newTranslationX = scaledPanX - vh.getPivotX() +
-                    vh.getPositionX() / mapWidth * engine.contentWidth * engine.realZoom
+                    realXPosition / mapWidth * engine.contentWidth * engine.realZoom
             val newTranslationY = scaledPanY - vh.getPivotY() +
-                    vh.getPositionY() / mapHeight * engine.contentHeight * engine.realZoom
+                    realYPosition / mapHeight * engine.contentHeight * engine.realZoom
             vh.view.apply {
                 translationX = newTranslationX
                 translationY = newTranslationY

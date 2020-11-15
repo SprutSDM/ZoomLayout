@@ -57,6 +57,8 @@
         <attr name="background" format="reference" />
         <attr name="mapWidth" format="integer" />
         <attr name="mapHeight" format="integer" />
+        <attr name="virtualMapWidth" format="integer" />
+        <attr name="virtualMapHeight" format="integer" />
     </declare-styleable>
 
 </resources>
