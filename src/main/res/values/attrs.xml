@@ -59,6 +59,7 @@
         <attr name="mapHeight" format="integer" />
         <attr name="virtualMapWidth" format="integer" />
         <attr name="virtualMapHeight" format="integer" />
+        <attr name="pathColor" format="color" />
     </declare-styleable>
 
 </resources>

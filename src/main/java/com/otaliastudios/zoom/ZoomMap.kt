@@ -2,14 +2,15 @@ package com.otaliastudios.zoom
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Matrix
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import android.widget.ImageView
 import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import com.otaliastudios.zoom.ZoomApi.ZoomType
 
@@ -28,11 +29,12 @@ class ZoomMap @JvmOverloads constructor(
             value?.bind(this)
             onAdapterDataSetChanged()
         }
-    private var backgroundImage: ImageView? = null
+    private var backgroundWithPath: MapWithPathView? = null
     var mapWidth: Int = 0
         private set
     var mapHeight: Int = 0
         private set
+    @ColorInt var defaultPathColor: Int = Color.BLACK
 
     var virtualWidth: Int = 0
         private set
@@ -69,6 +71,7 @@ class ZoomMap @JvmOverloads constructor(
         val alignment = a.getInt(R.styleable.ZoomEngine_alignment, ZoomApi.ALIGNMENT_DEFAULT)
         val animationDuration = a.getInt(R.styleable.ZoomEngine_animationDuration, ZoomEngine.DEFAULT_ANIMATION_DURATION.toInt()).toLong()
         val backgroundResId = a.getResourceId(R.styleable.ZoomEngine_background, 0)
+        defaultPathColor = a.getColor(R.styleable.ZoomEngine_pathColor, Color.BLACK)
         mapWidth = a.getInt(R.styleable.ZoomEngine_mapWidth, 0)
         mapHeight = a.getInt(R.styleable.ZoomEngine_mapHeight, 0)
         virtualWidth = a.getInt(R.styleable.ZoomEngine_virtualMapWidth, 10_000)
@@ -107,7 +110,7 @@ class ZoomMap @JvmOverloads constructor(
     //region Internal
 
     override fun onGlobalLayout() {
-        backgroundImage?.let {
+        backgroundWithPath?.let {
             engine.setContentSize(it.measuredWidth.toFloat(), it.measuredHeight.toFloat())
             if (it.isLaidOut && !wasUpdatedAtFirstGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
                 wasUpdatedAtFirstGlobalLayout = true
@@ -144,18 +147,31 @@ class ZoomMap @JvmOverloads constructor(
 
     fun setOnOutsideClickListener(clickListener: OnClickListener) {
         onOutsideClickListener = clickListener
-        backgroundImage?.setOnClickListener(clickListener)
+        backgroundWithPath?.setOnClickListener(clickListener)
+    }
+
+    fun setPath(path: List<Pair<Float, Float>>, @ColorInt pathColor: Int = defaultPathColor) {
+        backgroundWithPath?.setPath(
+            dots = path.map {
+                it.first - (virtualWidth - mapWidth) / 2 to it.second - (virtualHeight - mapHeight) / 2
+            },
+            pathColor = pathColor
+        )
     }
 
     private fun setBackground(@DrawableRes resId: Int) {
-        if (backgroundImage == null) {
-            backgroundImage = ImageView(context).apply {
+        if (backgroundWithPath == null) {
+            backgroundWithPath = MapWithPathView(context).apply {
                 layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 setOnClickListener(onOutsideClickListener)
             }
-            addView(backgroundImage)
+            addView(backgroundWithPath)
         }
-        backgroundImage?.setImageResource(resId)
+        backgroundWithPath?.apply {
+            mapWidth = this@ZoomMap.mapWidth
+            mapHeight = this@ZoomMap.mapHeight
+            setImageResource(resId)
+        }
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
@@ -170,7 +186,7 @@ class ZoomMap @JvmOverloads constructor(
     fun onAdapterDataSetChanged() {
         adapter?.let { adapter ->
             removeAllViews()
-            addView(backgroundImage)
+            addView(backgroundWithPath)
             visibleViews.forEach {
                 if (it.type !in viewsCache) {
                     viewsCache[it.type] = hashSetOf()
@@ -195,7 +211,7 @@ class ZoomMap @JvmOverloads constructor(
 
     private fun onUpdate() {
         // Update background
-        backgroundImage?.let {
+        backgroundWithPath?.let {
             it.pivotX = 0f
             it.pivotY = 0f
             it.translationX = engine.scaledPanX
