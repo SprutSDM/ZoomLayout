@@ -28,7 +28,7 @@ class MapWithPathView @JvmOverloads constructor(
         pathEffect = cornerPathEffect
     }
 
-    private var path = Path()
+    private var paths = mutableListOf<PathScope>()
     private var pathLength = 0f
     private var pathMeasure = PathMeasure()
 
@@ -52,15 +52,22 @@ class MapWithPathView @JvmOverloads constructor(
     var mapWidth = 0
     var mapHeight = 0
 
-    fun setPath(dots: List<Pair<Float, Float>>, @ColorInt pathColor: Int) {
+    fun resetPaths() {
+        paths.clear()
+        pathLength = 0f
+        updatePath()
+    }
+
+    fun addPath(dots: List<Pair<Float, Float>>, @ColorInt pathColor: Int) {
         linePaint.color = pathColor
-        path = Path()
+        val path = Path()
         path.moveTo(dots[0].first, dots[0].second)
         for (i in 1 until dots.size) {
             path.lineTo(dots[i].first, dots[i].second)
         }
         pathMeasure.setPath(path, false)
         pathLength = pathMeasure.length
+        paths.add(PathScope(path, pathLength))
         updatePath()
     }
 
@@ -68,7 +75,9 @@ class MapWithPathView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.withScale(x = canvas.width.toFloat() / mapWidth, y =  canvas.height.toFloat() / mapHeight) {
-            canvas.drawPath(path, linePaint)
+            paths.forEach { pathScope ->
+                canvas.drawPath(pathScope.path, linePaint)
+            }
         }
     }
 
@@ -91,6 +100,11 @@ class MapWithPathView @JvmOverloads constructor(
             restoreToCount(checkpoint)
         }
     }
+
+    private class PathScope(
+        val path: Path,
+        val pathLength: Float
+    )
 
     companion object {
         private const val TAG = "MapWithPathView"

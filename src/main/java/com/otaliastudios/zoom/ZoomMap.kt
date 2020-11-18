@@ -150,8 +150,12 @@ class ZoomMap @JvmOverloads constructor(
         backgroundWithPath?.setOnClickListener(clickListener)
     }
 
-    fun setPath(path: List<Pair<Float, Float>>, @ColorInt pathColor: Int = defaultPathColor) {
-        backgroundWithPath?.setPath(
+    fun resetPaths() {
+        backgroundWithPath?.resetPaths()
+    }
+
+    fun addPath(path: List<Pair<Float, Float>>, @ColorInt pathColor: Int = defaultPathColor) {
+        backgroundWithPath?.addPath(
             dots = path.map {
                 it.first - (virtualWidth - mapWidth) / 2 to it.second - (virtualHeight - mapHeight) / 2
             },
