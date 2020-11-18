@@ -60,6 +60,7 @@
         <attr name="virtualMapWidth" format="integer" />
         <attr name="virtualMapHeight" format="integer" />
         <attr name="pathColor" format="color" />
+        <attr name="pathAnimationDuration" format="integer" />
     </declare-styleable>
 
 </resources>

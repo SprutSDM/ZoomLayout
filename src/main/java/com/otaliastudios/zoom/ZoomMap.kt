@@ -1,5 +1,6 @@
 package com.otaliastudios.zoom
 
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
@@ -8,6 +9,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
@@ -35,6 +37,7 @@ class ZoomMap @JvmOverloads constructor(
     var mapHeight: Int = 0
         private set
     @ColorInt var defaultPathColor: Int = Color.BLACK
+    var pathAnimationDuration: Long = 500
 
     var virtualWidth: Int = 0
         private set
@@ -76,6 +79,7 @@ class ZoomMap @JvmOverloads constructor(
         mapHeight = a.getInt(R.styleable.ZoomEngine_mapHeight, 0)
         virtualWidth = a.getInt(R.styleable.ZoomEngine_virtualMapWidth, 10_000)
         virtualHeight = a.getInt(R.styleable.ZoomEngine_virtualMapHeight, 10_000)
+        pathAnimationDuration = a.getInt(R.styleable.ZoomEngine_pathAnimationDuration, 500).toLong()
         a.recycle()
 
         engine.setContainer(this)
@@ -148,6 +152,15 @@ class ZoomMap @JvmOverloads constructor(
     fun setOnOutsideClickListener(clickListener: OnClickListener) {
         onOutsideClickListener = clickListener
         backgroundWithPath?.setOnClickListener(clickListener)
+    }
+
+    fun animatePaths() {
+        backgroundWithPath?.let {
+            ObjectAnimator.ofFloat(it, "pathProgress", 0f, 1f).apply {
+                duration = pathAnimationDuration
+                interpolator = LinearInterpolator()
+            }.start()
+        }
     }
 
     fun resetPaths() {

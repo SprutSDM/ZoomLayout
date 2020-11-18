@@ -29,33 +29,20 @@ class MapWithPathView @JvmOverloads constructor(
     }
 
     private var paths = mutableListOf<PathScope>()
-    private var pathLength = 0f
     private var pathMeasure = PathMeasure()
 
     var pathProgress: Float = 1f
         set(value) {
             field = value.coerceIn(0f, 1f)
-            updatePath()
+            invalidateDrawable(drawable)
         }
-
-    private fun updatePath() {
-        if (pathProgress < 1f) {
-            val progressEffect = DashPathEffect(
-                floatArrayOf(0f, (1f - pathProgress) * pathLength, pathProgress * pathLength, 0f),
-                0f
-            )
-            linePaint.pathEffect = ComposePathEffect(progressEffect, cornerPathEffect)
-        }
-        invalidateDrawable(drawable)
-    }
 
     var mapWidth = 0
     var mapHeight = 0
 
     fun resetPaths() {
         paths.clear()
-        pathLength = 0f
-        updatePath()
+        invalidateDrawable(drawable)
     }
 
     fun addPath(dots: List<Pair<Float, Float>>, @ColorInt pathColor: Int) {
@@ -66,16 +53,23 @@ class MapWithPathView @JvmOverloads constructor(
             path.lineTo(dots[i].first, dots[i].second)
         }
         pathMeasure.setPath(path, false)
-        pathLength = pathMeasure.length
+        val pathLength = pathMeasure.length
         paths.add(PathScope(path, pathLength))
-        updatePath()
+        invalidateDrawable(drawable)
     }
 
-    @SuppressLint("CanvasSize")
+    @SuppressLint("CanvasSize", "DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.withScale(x = canvas.width.toFloat() / mapWidth, y =  canvas.height.toFloat() / mapHeight) {
             paths.forEach { pathScope ->
+                if (pathProgress <= 1f) {
+                    val progressEffect = DashPathEffect(
+                        floatArrayOf(0f, (1f - pathProgress) * pathScope.pathLength, pathProgress * pathScope.pathLength, 0f),
+                        0f
+                    )
+                    linePaint.pathEffect = ComposePathEffect(progressEffect, cornerPathEffect)
+                }
                 canvas.drawPath(pathScope.path, linePaint)
             }
         }
