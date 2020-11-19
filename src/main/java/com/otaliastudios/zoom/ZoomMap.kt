@@ -47,7 +47,7 @@ class ZoomMap @JvmOverloads constructor(
     private var visibleViews: List<TypedViewHolder> = emptyList()
     private val viewsCache: HashMap<Int, HashSet<ZoomMapViewHolder>> = hashMapOf()
 
-    private var wasUpdatedAtFirstGlobalLayout: Boolean = false
+    private var shouldBeUpdatedAfterGlobalLayout: Boolean = true
 
     private var onOutsideClickListener: OnClickListener? = null
 
@@ -116,8 +116,8 @@ class ZoomMap @JvmOverloads constructor(
     override fun onGlobalLayout() {
         backgroundWithPath?.let {
             engine.setContentSize(it.measuredWidth.toFloat(), it.measuredHeight.toFloat())
-            if (it.isLaidOut && !wasUpdatedAtFirstGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
-                wasUpdatedAtFirstGlobalLayout = true
+            if (it.isLaidOut && shouldBeUpdatedAfterGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
+                shouldBeUpdatedAfterGlobalLayout = false
                 onUpdate()
             }
         }
@@ -223,6 +223,8 @@ class ZoomMap @JvmOverloads constructor(
                 addView(viewHolder.view)
             }
             visibleViews = newVisibleViews
+            // removeAllViews(), addView() methods will trigger global layout and we have to update our views on that event
+            shouldBeUpdatedAfterGlobalLayout = true
         }
     }
 

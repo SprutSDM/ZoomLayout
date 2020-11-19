@@ -9,4 +9,6 @@ abstract class ZoomMapViewHolder(val view: View) {
     abstract fun getPivotY() : Float
 
     open fun onVisibilityRateChanged(rate: Float) = Unit
+
+    fun isLaidOut() = view.isLaidOut
 }
