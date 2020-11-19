@@ -28,6 +28,17 @@ class MapWithPathView @JvmOverloads constructor(
         pathEffect = cornerPathEffect
     }
 
+    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
+
+    private val pathDot = Path().apply {
+        addCircle(0f, 0f, STROKE_WIDTH / 2f, Path.Direction.CW)
+    }
+
+    private val bufferPos = FloatArray(2)
+    private val bufferTan = FloatArray(2)
+
     private var paths = mutableListOf<PathScope>()
     private var pathMeasure = PathMeasure()
 
@@ -46,7 +57,6 @@ class MapWithPathView @JvmOverloads constructor(
     }
 
     fun addPath(dots: List<Pair<Float, Float>>, @ColorInt pathColor: Int) {
-        linePaint.color = pathColor
         val path = Path()
         path.moveTo(dots[0].first, dots[0].second)
         for (i in 1 until dots.size) {
@@ -54,7 +64,7 @@ class MapWithPathView @JvmOverloads constructor(
         }
         pathMeasure.setPath(path, false)
         val pathLength = pathMeasure.length
-        paths.add(PathScope(path, pathLength))
+        paths.add(PathScope(path, pathLength, pathColor))
         invalidateDrawable(drawable)
     }
 
@@ -63,14 +73,26 @@ class MapWithPathView @JvmOverloads constructor(
         super.onDraw(canvas)
         canvas.withScale(x = canvas.width.toFloat() / mapWidth, y =  canvas.height.toFloat() / mapHeight) {
             paths.forEach { pathScope ->
+                linePaint.color = pathScope.color
+                dotPaint.color = pathScope.color
                 if (pathProgress <= 1f) {
                     val progressEffect = DashPathEffect(
-                        floatArrayOf(0f, (1f - pathProgress) * pathScope.pathLength, pathProgress * pathScope.pathLength, 0f),
+                        floatArrayOf(0f, (1f - pathProgress) * pathScope.length, pathProgress * pathScope.length, 0f),
                         0f
                     )
                     linePaint.pathEffect = ComposePathEffect(progressEffect, cornerPathEffect)
                 }
                 canvas.drawPath(pathScope.path, linePaint)
+
+                pathMeasure.setPath(pathScope.path, false)
+                pathMeasure.getPosTan((1f - pathProgress) * pathScope.length, bufferPos, bufferTan)
+                withTranslation(bufferPos[0], bufferPos[1]) {
+                    canvas.drawPath(pathDot, dotPaint)
+                }
+                pathMeasure.getPosTan(pathScope.length, bufferPos, bufferTan)
+                withTranslation(bufferPos[0], bufferPos[1]) {
+                    canvas.drawPath(pathDot, dotPaint)
+                }
             }
         }
     }
@@ -95,9 +117,28 @@ class MapWithPathView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Wrap the specified [block] in calls to [Canvas.save]/[Canvas.translate]
+     * and [Canvas.restoreToCount].
+     */
+    private inline fun Canvas.withTranslation(
+        x: Float = 0.0f,
+        y: Float = 0.0f,
+        block: Canvas.() -> Unit
+    ) {
+        val checkpoint = save()
+        translate(x, y)
+        try {
+            block()
+        } finally {
+            restoreToCount(checkpoint)
+        }
+    }
+
     private class PathScope(
         val path: Path,
-        val pathLength: Float
+        val length: Float,
+        @ColorInt val color: Int
     )
 
     companion object {
