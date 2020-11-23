@@ -44,7 +44,7 @@ class ZoomMap @JvmOverloads constructor(
     var virtualHeight: Int = 0
         private set
 
-    private var visibleViews: List<TypedViewHolder> = emptyList()
+    private val visibleViews: MutableList<TypedViewHolder> = mutableListOf()
     private val viewsCache: HashMap<Int, HashSet<ZoomMapViewHolder>> = hashMapOf()
 
     private var shouldBeUpdatedAfterGlobalLayout: Boolean = true
@@ -205,27 +205,94 @@ class ZoomMap @JvmOverloads constructor(
             removeAllViews()
             addView(backgroundWithPath)
             visibleViews.forEach {
-                if (it.type !in viewsCache) {
-                    viewsCache[it.type] = hashSetOf()
-                }
-                viewsCache[it.type]?.add(it.viewHolder)
+                putViewHolderIntoCache(it)
             }
-            val newVisibleViews = mutableListOf<TypedViewHolder>()
+            visibleViews.clear()
             for (i in 0 until adapter.getChildCount()) {
                 val vhType = adapter.getTypeFor(i)
-                val viewHolder = viewsCache[vhType]?.let { typedViewsCache ->
-                    typedViewsCache.firstOrNull()?.also {
-                        typedViewsCache.remove(it)
-                    } ?: adapter.createViewHolder(this, vhType)
-                } ?: adapter.createViewHolder(this, vhType)
+                val viewHolder = getViewHolder(adapter, vhType)
                 adapter.bindViewHolder(viewHolder, i, vhType)
-                newVisibleViews.add(TypedViewHolder(viewHolder, vhType))
+                visibleViews.add(TypedViewHolder(viewHolder, vhType))
                 addView(viewHolder.view)
             }
-            visibleViews = newVisibleViews
-            // removeAllViews(), addView() methods will trigger global layout and we have to update our views on that event
             shouldBeUpdatedAfterGlobalLayout = true
         }
+    }
+
+    fun onAdapterDataSetInserted(position: Int, count: Int) {
+        adapter?.let { adapter ->
+            val viewsForInsert = mutableListOf<TypedViewHolder>()
+            for (i in position until position + count) {
+                val vhType = adapter.getTypeFor(i)
+                val viewHolder = getViewHolder(adapter, vhType)
+                adapter.bindViewHolder(viewHolder, i, vhType)
+                viewsForInsert.add(TypedViewHolder(viewHolder, vhType))
+                addView(viewHolder.view, i + VIEWS_SHIFT)
+            }
+            visibleViews.addAll(position, viewsForInsert)
+            shouldBeUpdatedAfterGlobalLayout = true
+        }
+    }
+
+    fun onAdapterDataSetRemoved(position: Int, count: Int) {
+        adapter?.let { adapter ->
+            val vhsForRemove = mutableListOf<TypedViewHolder>()
+            for (i in position + count - 1 downTo position) {
+                val vh = visibleViews[i]
+                vhsForRemove.add(vh)
+                putViewHolderIntoCache(vh)
+            }
+            visibleViews.removeAll(vhsForRemove)
+            removeViews(position + VIEWS_SHIFT, count)
+            shouldBeUpdatedAfterGlobalLayout = true
+        }
+    }
+
+    fun onAdapterDataSetMoved(fromPosition: Int, toPosition: Int) {
+        adapter?.let { adapter ->
+            val viewFirst = getChildAt(fromPosition + VIEWS_SHIFT)
+            val viewSecond = getChildAt(toPosition + VIEWS_SHIFT)
+            removeViewAt(toPosition + VIEWS_SHIFT)
+            addView(viewFirst, toPosition + VIEWS_SHIFT)
+            removeViewAt(fromPosition + VIEWS_SHIFT)
+            addView(viewSecond, fromPosition + VIEWS_SHIFT)
+
+            val vh = visibleViews[fromPosition]
+            visibleViews[fromPosition] = visibleViews[toPosition]
+            visibleViews[toPosition] = vh
+            shouldBeUpdatedAfterGlobalLayout = true
+        }
+    }
+
+    fun onAdapterDataSetChanged(position: Int, count: Int) {
+        adapter?.let { adapter ->
+            for (i in position until position + count) {
+                val vh = visibleViews[i]
+                adapter.bindViewHolder(vh.viewHolder, i, vh.type)
+            }
+            shouldBeUpdatedAfterGlobalLayout = true
+        }
+    }
+
+    /**
+     * Returns ViewHolder from cache or create a new instance
+     */
+    private fun getViewHolder(adapter: ZoomMapAdapter<out ZoomMapViewHolder>, vhType: Int): ZoomMapViewHolder {
+        return viewsCache[vhType]?.let { typedViewsCache ->
+            typedViewsCache.firstOrNull()?.also {
+                typedViewsCache.remove(it)
+            } ?: adapter.createViewHolder(this, vhType)
+        } ?: adapter.createViewHolder(this, vhType)
+    }
+
+    /**
+     * Puts ViewHolder into cache.
+     */
+    private fun putViewHolderIntoCache(viewHolder: TypedViewHolder) {
+        if (viewHolder.type !in viewsCache) {
+            viewsCache[viewHolder.type] = hashSetOf()
+        }
+        viewsCache[viewHolder.type]?.add(viewHolder.viewHolder)
     }
 
     private fun onUpdate() {
@@ -275,5 +342,8 @@ class ZoomMap @JvmOverloads constructor(
         private val TAG = ZoomMap::class.java.simpleName
         private const val MAX_DEPTH_RATE_AT_ZOOM = 1.2f
         private const val MIN_DEPTH_RATE_AT_ZOOM = 0.4f
+
+        // Count of views that placed before recycle views
+        private const val VIEWS_SHIFT = 1
     }
 }

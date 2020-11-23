@@ -15,7 +15,23 @@ abstract class ZoomMapAdapter<VH : ZoomMapViewHolder> {
 
     open fun getTypeFor(position: Int): Int = 0
 
-    protected fun notifyDataSetChanged() {
+    fun notifyDataSetChanged() {
         zoomMap?.onAdapterDataSetChanged()
+    }
+
+    fun notifyDataSetInserted(position: Int, count: Int) {
+        zoomMap?.onAdapterDataSetInserted(position = position, count = count)
+    }
+
+    fun notifyDataSetRemoved(position: Int, count: Int) {
+        zoomMap?.onAdapterDataSetRemoved(position = position, count = count)
+    }
+
+    fun notifyDataSetMoved(fromPosition: Int, toPosition: Int) {
+        zoomMap?.onAdapterDataSetMoved(fromPosition = fromPosition, toPosition = toPosition)
+    }
+
+    fun notifyDataSetChanged(position: Int, count: Int) {
+        zoomMap?.onAdapterDataSetChanged(position = position, count = count)
     }
 }
