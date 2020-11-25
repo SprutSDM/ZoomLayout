@@ -205,6 +205,7 @@ class ZoomMap @JvmOverloads constructor(
             removeAllViews()
             addView(backgroundWithPath)
             visibleViews.forEach {
+                adapter.onViewDetached(it.viewHolder)
                 putViewHolderIntoCache(it)
             }
             visibleViews.clear()
@@ -239,6 +240,7 @@ class ZoomMap @JvmOverloads constructor(
             val vhsForRemove = mutableListOf<TypedViewHolder>()
             for (i in position + count - 1 downTo position) {
                 val vh = visibleViews[i]
+                adapter.onViewDetached(vh.viewHolder)
                 vhsForRemove.add(vh)
                 putViewHolderIntoCache(vh)
             }
