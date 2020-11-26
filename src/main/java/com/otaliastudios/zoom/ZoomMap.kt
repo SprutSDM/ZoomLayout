@@ -176,7 +176,7 @@ class ZoomMap @JvmOverloads constructor(
         )
     }
 
-    private fun setBackground(@DrawableRes resId: Int) {
+    fun setBackground(@DrawableRes resId: Int) {
         if (backgroundWithPath == null) {
             backgroundWithPath = MapWithPathView(context).apply {
                 layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
