@@ -3,6 +3,8 @@ package com.otaliastudios.zoom
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Matrix
 import android.util.AttributeSet
@@ -31,7 +33,7 @@ class ZoomMap @JvmOverloads constructor(
             value?.bind(this)
             onAdapterDataSetChanged()
         }
-    private var backgroundWithPath: MapWithPathView? = null
+    private val backgroundWithPath: MapWithPathView
     var mapWidth: Int = 0
         private set
     var mapHeight: Int = 0
@@ -104,7 +106,14 @@ class ZoomMap @JvmOverloads constructor(
         setAnimationDuration(animationDuration)
         setMinZoom(minZoom, minZoomMode)
         setMaxZoom(maxZoom, maxZoomMode)
+        backgroundWithPath = MapWithPathView(context).apply {
+            layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setOnClickListener(onOutsideClickListener)
+            mapWidth = this@ZoomMap.mapWidth
+            mapHeight = this@ZoomMap.mapHeight
+        }
         setBackground(backgroundResId)
+        addView(backgroundWithPath)
 
         setWillNotDraw(false)
 
@@ -114,12 +123,10 @@ class ZoomMap @JvmOverloads constructor(
     //region Internal
 
     override fun onGlobalLayout() {
-        backgroundWithPath?.let {
-            engine.setContentSize(it.measuredWidth.toFloat(), it.measuredHeight.toFloat())
-            if (it.isLaidOut && shouldBeUpdatedAfterGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
-                shouldBeUpdatedAfterGlobalLayout = false
-                onUpdate()
-            }
+        engine.setContentSize(backgroundWithPath.measuredWidth.toFloat(), backgroundWithPath.measuredHeight.toFloat())
+        if (backgroundWithPath.isLaidOut && shouldBeUpdatedAfterGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
+            shouldBeUpdatedAfterGlobalLayout = false
+            onUpdate()
         }
     }
 
@@ -151,24 +158,22 @@ class ZoomMap @JvmOverloads constructor(
 
     fun setOnOutsideClickListener(clickListener: OnClickListener) {
         onOutsideClickListener = clickListener
-        backgroundWithPath?.setOnClickListener(clickListener)
+        backgroundWithPath.setOnClickListener(clickListener)
     }
 
     fun animatePaths() {
-        backgroundWithPath?.let {
-            ObjectAnimator.ofFloat(it, "pathProgress", 0f, 1f).apply {
-                duration = pathAnimationDuration
-                interpolator = LinearInterpolator()
-            }.start()
-        }
+        ObjectAnimator.ofFloat(backgroundWithPath, "pathProgress", 0f, 1f).apply {
+            duration = pathAnimationDuration
+            interpolator = LinearInterpolator()
+        }.start()
     }
 
     fun resetPaths() {
-        backgroundWithPath?.resetPaths()
+        backgroundWithPath.resetPaths()
     }
 
     fun addPath(path: List<Pair<Float, Float>>, @ColorInt pathColor: Int = defaultPathColor) {
-        backgroundWithPath?.addPath(
+        backgroundWithPath.addPath(
             dots = path.map {
                 it.first - (virtualWidth - mapWidth) / 2 to it.second - (virtualHeight - mapHeight) / 2
             },
@@ -176,19 +181,12 @@ class ZoomMap @JvmOverloads constructor(
         )
     }
 
-    fun setBackground(@DrawableRes resId: Int) {
-        if (backgroundWithPath == null) {
-            backgroundWithPath = MapWithPathView(context).apply {
-                layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                setOnClickListener(onOutsideClickListener)
-            }
-            addView(backgroundWithPath)
-        }
-        backgroundWithPath?.apply {
-            mapWidth = this@ZoomMap.mapWidth
-            mapHeight = this@ZoomMap.mapHeight
-            setImageResource(resId)
-        }
+    fun setBackground(bitmap: Bitmap) {
+        backgroundWithPath.setImageBitmap(bitmap)
+    }
+
+    fun setBackground(@DrawableRes backgroundRes: Int) {
+        backgroundWithPath.setImageResource(backgroundRes)
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
@@ -299,13 +297,13 @@ class ZoomMap @JvmOverloads constructor(
 
     private fun onUpdate() {
         // Update background
-        backgroundWithPath?.let {
-            it.pivotX = 0f
-            it.pivotY = 0f
-            it.translationX = engine.scaledPanX
-            it.translationY = engine.scaledPanY
-            it.scaleX = engine.realZoom
-            it.scaleY = engine.realZoom
+        backgroundWithPath.apply {
+            pivotX = 0f
+            pivotY = 0f
+            translationX = engine.scaledPanX
+            translationY = engine.scaledPanY
+            scaleX = engine.realZoom
+            scaleY = engine.realZoom
         }
         val zoomWidthPercent = (engine.zoom - getMinZoom()) / (getMaxZoom() - getMinZoom())
         val zoomDepthWidth = (MAX_DEPTH_RATE_AT_ZOOM - MIN_DEPTH_RATE_AT_ZOOM)
