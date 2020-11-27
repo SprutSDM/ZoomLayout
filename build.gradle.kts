@@ -21,6 +21,7 @@ android {
 dependencies {
     val kotlinVersion = property("kotlinVersion") as String
     api("androidx.annotation:annotation:1.1.0")
+    api("androidx.appcompat:appcompat:1.2.0")
     api("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion")
     api("com.otaliastudios.opengl:egloo:0.4.0")
 

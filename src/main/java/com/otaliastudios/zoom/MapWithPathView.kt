@@ -9,16 +9,17 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
+import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
-import android.widget.ImageView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.appcompat.widget.AppCompatImageView
 
 class MapWithPathView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = 0
-) : ImageView(context, attrs, defStyleAttr) {
+) : AppCompatImageView(context, attrs, defStyleAttr) {
 
     private val cornerPathEffect = CornerPathEffect(32f)
 
@@ -70,8 +71,13 @@ class MapWithPathView @JvmOverloads constructor(
 
     @SuppressLint("CanvasSize", "DrawAllocation")
     override fun onDraw(canvas: Canvas) {
+        // Bitmap may be recycled by glide, if free memory is ending. So we have to skip a few draw frames until a new
+        // bitmap will not loaded
+        if ((drawable as? BitmapDrawable)?.bitmap?.isRecycled == true) {
+            return
+        }
         super.onDraw(canvas)
-        canvas.withScale(x = canvas.width.toFloat() / mapWidth, y =  canvas.height.toFloat() / mapHeight) {
+        canvas.withScale(x = canvas.width.toFloat() / mapWidth, y = canvas.height.toFloat() / mapHeight) {
             paths.forEach { pathScope ->
                 linePaint.color = pathScope.color
                 dotPaint.color = pathScope.color
