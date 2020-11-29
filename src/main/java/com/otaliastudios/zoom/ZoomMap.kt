@@ -340,8 +340,8 @@ class ZoomMap @JvmOverloads constructor(
 
     companion object {
         private val TAG = ZoomMap::class.java.simpleName
-        private const val MAX_DEPTH_RATE_AT_ZOOM = 1.2f
-        private const val MIN_DEPTH_RATE_AT_ZOOM = 0.4f
+        private const val MAX_DEPTH_RATE_AT_ZOOM = 0.8f
+        private const val MIN_DEPTH_RATE_AT_ZOOM = 0.15f
 
         // Count of views that placed before recycle views
         private const val VIEWS_SHIFT = 1
