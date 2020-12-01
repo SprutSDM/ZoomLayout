@@ -4,10 +4,10 @@ import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Matrix
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -123,7 +123,10 @@ class ZoomMap @JvmOverloads constructor(
     //region Internal
 
     override fun onGlobalLayout() {
-        engine.setContentSize(backgroundWithPath.measuredWidth.toFloat(), backgroundWithPath.measuredHeight.toFloat())
+        engine.setContentSize(
+            backgroundWithPath.measuredWidth.toFloat() + paddingStart + paddingEnd,
+            backgroundWithPath.measuredHeight.toFloat() + paddingTop + paddingBottom
+        )
         if (backgroundWithPath.isLaidOut && shouldBeUpdatedAfterGlobalLayout && engine.zoom != Float.POSITIVE_INFINITY) {
             shouldBeUpdatedAfterGlobalLayout = false
             onUpdate()
@@ -314,9 +317,9 @@ class ZoomMap @JvmOverloads constructor(
             val realXPosition = vh.getPositionX() - (virtualWidth - mapWidth) / 2f
             val realYPosition = vh.getPositionY() - (virtualHeight - mapHeight) / 2f
             val newTranslationX = scaledPanX - vh.getPivotX() +
-                    realXPosition / mapWidth * engine.contentWidth * engine.realZoom
+                    realXPosition / mapWidth * (engine.contentWidth - paddingStart - paddingEnd) * engine.realZoom
             val newTranslationY = scaledPanY - vh.getPivotY() +
-                    realYPosition / mapHeight * engine.contentHeight * engine.realZoom
+                    realYPosition / mapHeight * (engine.contentHeight - paddingTop - paddingBottom) * engine.realZoom
             vh.view.apply {
                 translationX = newTranslationX
                 translationY = newTranslationY
