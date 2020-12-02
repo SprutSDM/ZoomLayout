@@ -175,10 +175,13 @@ class ZoomMap @JvmOverloads constructor(
         backgroundWithPath.resetPaths()
     }
 
-    fun addPath(path: List<Pair<Float, Float>>, @ColorInt pathColor: Int = defaultPathColor) {
+    fun addPath(path: List<MapWithPathView.PathPoint>, @ColorInt pathColor: Int = defaultPathColor) {
         backgroundWithPath.addPath(
-            dots = path.map {
-                it.first - (virtualWidth - mapWidth) / 2 to it.second - (virtualHeight - mapHeight) / 2
+            pathPoints = path.map {
+                MapWithPathView.PathPoint(
+                    positionX = it.positionX - (virtualWidth - mapWidth) / 2,
+                    positionY = it.positionY - (virtualHeight - mapHeight) / 2
+                )
             },
             pathColor = pathColor
         )

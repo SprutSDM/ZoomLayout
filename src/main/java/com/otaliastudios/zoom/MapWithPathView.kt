@@ -57,11 +57,11 @@ class MapWithPathView @JvmOverloads constructor(
         invalidateDrawable(drawable)
     }
 
-    fun addPath(dots: List<Pair<Float, Float>>, @ColorInt pathColor: Int) {
+    fun addPath(pathPoints: List<PathPoint>, @ColorInt pathColor: Int) {
         val path = Path()
-        path.moveTo(dots[0].first, dots[0].second)
-        for (i in 1 until dots.size) {
-            path.lineTo(dots[i].first, dots[i].second)
+        path.moveTo(pathPoints[0].positionX, pathPoints[0].positionY)
+        for (i in 1 until pathPoints.size) {
+            path.lineTo(pathPoints[i].positionX, pathPoints[i].positionY)
         }
         pathMeasure.setPath(path, false)
         val pathLength = pathMeasure.length
@@ -83,7 +83,7 @@ class MapWithPathView @JvmOverloads constructor(
                 dotPaint.color = pathScope.color
                 if (pathProgress <= 1f) {
                     val progressEffect = DashPathEffect(
-                        floatArrayOf(0f, (1f - pathProgress) * pathScope.length, pathProgress * pathScope.length, 0f),
+                        floatArrayOf(pathProgress * pathScope.length, 0f, 0f, (1f - pathProgress) * pathScope.length),
                         0f
                     )
                     linePaint.pathEffect = ComposePathEffect(progressEffect, cornerPathEffect)
@@ -91,7 +91,7 @@ class MapWithPathView @JvmOverloads constructor(
                 canvas.drawPath(pathScope.path, linePaint)
 
                 pathMeasure.setPath(pathScope.path, false)
-                pathMeasure.getPosTan((1f - pathProgress) * pathScope.length, bufferPos, bufferTan)
+                pathMeasure.getPosTan(pathProgress * pathScope.length, bufferPos, bufferTan)
                 withTranslation(bufferPos[0], bufferPos[1]) {
                     canvas.drawPath(pathDot, dotPaint)
                 }
@@ -146,6 +146,8 @@ class MapWithPathView @JvmOverloads constructor(
         val length: Float,
         @ColorInt val color: Int
     )
+
+    data class PathPoint(val positionX: Float, val positionY: Float)
 
     companion object {
         private const val TAG = "MapWithPathView"
