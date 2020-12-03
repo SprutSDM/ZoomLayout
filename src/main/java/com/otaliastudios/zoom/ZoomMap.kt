@@ -204,6 +204,32 @@ class ZoomMap @JvmOverloads constructor(
         return engine.onTouchEvent(ev) || super.onTouchEvent(ev)
     }
 
+    fun scrollTo(zoom: Float, x: Float, y: Float, animate: Boolean) {
+        Log.d(TAG, "scrollTo: ${getMapXPosition(x)} ${engine.contentWidth} ${engine.containerWidth}")
+        Log.d(TAG, "scrollTo: ${getMapYPosition(y)} ${engine.contentHeight} ${engine.containerHeight}")
+        val targetZoom = zoom.coerceIn(
+            engine.zoomManager.realZoomToZoom(engine.zoomManager.getMinZoom()),
+            engine.zoomManager.realZoomToZoom(engine.zoomManager.getMaxZoom())
+        )
+        val targetRealZoom = engine.zoomManager.zoomToRealZoom(targetZoom)
+
+        val zoomedLayoutWidth: Float = (engine.containerWidth / targetRealZoom)
+        val zoomedLayoutHeight: Float = (engine.containerHeight / targetRealZoom)
+        val contentCenterX: Float = getMapXPosition(x)
+        val contentCenterY: Float = getMapYPosition(y)
+        val diffX = (contentCenterX - zoomedLayoutWidth / 2f)
+        val diffY = (contentCenterY - zoomedLayoutHeight / 2f)
+        Log.d(TAG, "scrollTo: ${diffX} ${diffY}")
+
+        engine.moveTo(targetZoom, -diffX, -diffY, animate)
+//        engine.moveTo(
+//            zoom = zoom,
+//            x = -getMapXPosition(x),
+//            y = -getMapYPosition(y),
+//            animate = animate
+//        )
+    }
+
     fun onAdapterDataSetChanged() {
         adapter?.let { adapter ->
             removeAllViews()
@@ -317,12 +343,8 @@ class ZoomMap @JvmOverloads constructor(
 
         visibleViews.forEach {
             val vh = it.viewHolder
-            val realXPosition = vh.getPositionX() - (virtualWidth - mapWidth) / 2f
-            val realYPosition = vh.getPositionY() - (virtualHeight - mapHeight) / 2f
-            val newTranslationX = scaledPanX - vh.getPivotX() +
-                    realXPosition / mapWidth * (engine.contentWidth - paddingStart - paddingEnd) * engine.realZoom
-            val newTranslationY = scaledPanY - vh.getPivotY() +
-                    realYPosition / mapHeight * (engine.contentHeight - paddingTop - paddingBottom) * engine.realZoom
+            val newTranslationX = scaledPanX - vh.getPivotX() + getMapXPosition(vh.getPositionX()) * engine.realZoom
+            val newTranslationY = scaledPanY - vh.getPivotY() + getMapYPosition(vh.getPositionY()) * engine.realZoom
             vh.view.apply {
                 translationX = newTranslationX
                 translationY = newTranslationY
@@ -332,6 +354,16 @@ class ZoomMap @JvmOverloads constructor(
         if ((isHorizontalScrollBarEnabled || isVerticalScrollBarEnabled) && !awakenScrollBars()) {
             invalidate()
         }
+    }
+
+    private fun getMapXPosition(virtualX: Float): Float {
+        return (virtualX - (virtualWidth - mapWidth) / 2f) / mapWidth *
+                (engine.contentWidth - paddingStart - paddingEnd)
+    }
+
+    private fun getMapYPosition(virtualY: Float): Float {
+        return (virtualY - (virtualHeight - mapHeight) / 2f) / mapHeight *
+                (engine.contentHeight - paddingTop - paddingBottom)
     }
 
     override fun computeHorizontalScrollOffset(): Int = engine.computeHorizontalScrollOffset()
